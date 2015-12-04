@@ -1,6 +1,8 @@
 import streamlist
 import eztables
 
+import os
+ 
 extentiondict={}
 
 
@@ -57,16 +59,47 @@ class printtableoutput(tableoutput):
     def __init__(self,
                  stream,
                  withtypes=True,
-                 width=3):
+                 width=None):
         self.stream=stream
         self.withtypes=withtypes
+        if width is None:
+            if os.isatty(1):
+                try:
+                    import fcntl, termios, struct
+                    width=struct.unpack('hh', fcntl.ioctl(1, termios.TIOCGWINSZ, '1234'))[1]
+                    print(width)
+                except:
+                    try:
+                        width=os.environ['LINES']
+                    except:
+                        pass
+            else:
+                width=999
+        self.width=width
     def head(self,table):
+        coltypes=table.types
+        colnames=table.columns
+        coldiv=(self.width-1)//len(colnames)
+        colrem=self.width-(coldiv*len(colnames))-1
+        colsizes=[coldiv-2 if i<colrem else coldiv-3 for i in range(len(colnames))]
+        self.colsizes=colsizes
         colsprint=[]
-        for i in range(len(table.columns)):
-            colsprint.append(table.columns[i])
-        self.stream.write("\t".join(colsprint)+"\n")
+        for i in range(len(colnames)):
+            data=colnames[i][:colsizes[i]]
+            if len(data)<colsizes[i]:
+                data=data+(" "*(colsizes[i]-len(data)))
+            colsprint.append(data)
+        self.stream.write("|"+("|".join(colsprint))+"|\n")
+        self.stream.write("-"*self.width)
     def write(self,row):
-        self.stream.write("\t".join([str(i) for i in row])+"\n")
+        colsprint=[]
+        for i in range(len(row)):
+            data=str(row[i])[:self.colsizes[i]]
+            if len(data)<self.colsizes[i]:
+                data=data+(" "*(self.colsizes[i]-len(data)))
+            colsprint.append(data)
+        self.stream.write("| "+(" | ".join(colsprint))+" |\n")
+        self.stream.write("-"*self.width)
     def final(self,table):
         pass
     def close(self):

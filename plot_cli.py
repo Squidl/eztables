@@ -48,6 +48,10 @@ parser.add_argument('--ylim',
                     dest='ylim',
                     action='store',
                     help='Y axis limits in format "ymin:ymax".')
+parser.add_argument('--zlim',
+                    dest='zlim',
+                    action='store',
+                    help='Z axis limits in format "Zmin:Zmax".')
 parser.add_argument('--hline',
                     dest='hlines',
                     nargs="*",
@@ -71,14 +75,12 @@ if ":" in xs:
     t.renamecol(splitted[0],splitted[1])
     xs=splitted[1]
 byrow["xs"]=xs
-t.typecast(xs,float)
 ys=args.yval
 if ":" in ys:
     splitted=ys.split(":")
     t.renamecol(splitted[0],splitted[1])
     ys=splitted[1]
 byrow["ys"]=ys
-t.typecast(ys,float)
 if args.zval is not None:
     zs=args.zval
     if ":" in zs:
@@ -86,7 +88,6 @@ if args.zval is not None:
         t.renamecol(splitted[0],splitted[1])
         zs=splitted[1]
     byrow["zs"]=zs
-    t.typecast(zs,float)
     zdirlabel=args.zdir
     if zdirlabel==xs:
         zdirlabel="x"
@@ -125,6 +126,9 @@ if args.xlim is not None:
 if args.ylim is not None:
     splits=args.ylim.split(":")
     splot.ylim(float(splits[0]),float(splits[1]))
+if args.zlim is not None:
+    splits=args.zlim.split(":")
+    splot.zlim(float(splits[0]),float(splits[1]))
 
 if args.hlines is not None:
     for x in args.hlines:

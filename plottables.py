@@ -10,24 +10,28 @@ namespacecolors=[
     [0,0,1],
     [1,1,0],
     [1,0,1],
-    [0,0,0],
-    [.5,.5,.5],
-    [150/255,75/255,0],
     [1,.5,0],
     [1,.8,.85],
-    [0,1,1]
+    [0,1,1],
+    [0,0,0],
+    [.5,.5,.5],
+    [float(150)/255,float(75)/255,0]
 ]
 
-def get_rowwise(table,row,glob):
+def get_rowwise(table,row,glob,maps={}):
     data = glob.copy()
-    cols = [row[k] for k in row.keys()]
+    keys = row.keys()
+    cols = [row[k] for k in keys]
     tags = [table.findcol(c) for c in cols]
     rowdata = []
     for tag in tags:
         rowdata.append([])
     for irow in table.data:
         for j in range(len(tags)):
-            rowdata[j].append(irow[tags[j]])
+            curr=irow[tags[j]]
+            if keys[j] in maps:
+                curr=maps[keys[j]][curr]
+            rowdata[j].append(curr)
     for keyword in row:
         index=cols.index(row[keyword])
         data[keyword]=rowdata[index]
@@ -48,86 +52,72 @@ def scatter3d(table,row,glob,cmap=None):
     ax.set_zlabel(zlab)
     return plt
 
+class valmap:
+    def __init__(self):
+        self.data={}
+        self.counter=0
+    def __getitem__(self,ind):
+        try:
+            find=float(ind)
+            return find
+        except:
+            if not ind in self.data:
+                self.data[ind]=self.counter
+                self.counter+=1
+            return self.data[ind]
+
 def scatter(table,row,glob,cmap=None,classes=None):
-    xs=None
-    if "xs" in row:
-        xs=row["xs"]
-        del row["xs"]
-    elif "xs" not in glob:
-        print("neex x value")
-    ys=None
-    if "ys" in row:
-        ys=row["ys"]
-        del row["ys"]
-    elif "ys" not in glob:
-        print("need y value")
-    zs=None
-    if "zs" in row:
-        zs=row["zs"]
-        del row["zs"]
     cind=None
+    labproxies=[]
+    maps={}
+    for val in ["xs","ys","zs"]:
+        if val in row:
+            typer = table.types[table.findcol(row[val])]
+            if not (typer.label=="float" or typer.label=="int"):
+                maps[val]=valmap()
     if classes is None and "c" in row:
         classes=table.get_distinct(row["c"])
         cind=table.findcol(row["c"])
         del row["c"]
     if cmap is None and classes!=None:
         cmap=[namespacecolors[i] for i in range(len(classes))]
-    data=get_rowwise(table,row,glob)
-    if not "marker" in data:
-        data["marker"]="o"
-    data["linestyle"]="None"
     if classes is None:
         classes=[None]
-    if zs is not None or "zs" in glob:
+    if "zs" in row or "zs" in glob:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
     else:
         fig=plt.figure()
-        ax=fig.add_subplot(111,xlabel=xs,ylabel=ys)
+        ax=fig.add_subplot(111,xlabel=row["xs"],ylabel=row["ys"])
     for i in range(len(classes)):
         thisclass=classes[i]
-        tofetch={}
-        if xs!=None:
-            tofetch["xs"]=xs
-        if ys!=None:
-            tofetch["ys"]=ys
-        if zs!=None:
-            tofetch["zs"]=zs
-        if len(tofetch.keys())>0:
-            ks=tofetch.keys()
-            cols=[tofetch[k] for k in ks]
-            cond=lambda x:True
-            if thisclass!=None:
-                cond=(lambda x: x[cind]==thisclass)
-            query=table.selection(cond)
-            query.project(cols)
-            additive={}
-            for k in ks:
-                additive[k]=[]
-            for row in query.data:
-                for j in range(len(row)):
-                    additive[ks[j]].append(row[j])
-            for k in additive.keys():
-                data[k]=additive[k]
+        cond=lambda x:True
+        if thisclass!=None:
+            cond=(lambda x: x[cind]==thisclass)
+        query=table.selection(cond)
+        data=get_rowwise(query,row,glob,maps)
+        if cmap is not None:
+            data["c"]=cmap[i]
+        data["label"]=thisclass
+        if "marker" not in data:
+            data["marker"]="o"
         if "zs" not in data:
             xvals=data["xs"]
             del data["xs"]
             yvals=data["ys"]
             del data["ys"]
-            if cmap is not None:
-                data["c"]=cmap[i]
-            data["label"]=thisclass
-            plt.plot(xvals,yvals,**data)
+            plt.scatter(xvals,yvals,**data)
         else:
-            if cmap is not None:
-                data["c"]=cmap[i]
-            data["label"]=thisclass
-            ax.plot(**data)
-            ax.legend()
+            ax.scatter(**data)
+        lab=plt.Rectangle( (0,0), 1, 1, color=data["c"])
+        labproxies.append( (lab,thisclass) )
     if "zs" in data:
-        ax.set_xlabel(xs)
-        ax.set_ylabel(ys)
-        ax.set_zlabel(zs)
+        ax.set_xlabel(row["xs"])
+        ax.set_ylabel(row["ys"])
+        ax.set_zlabel(row["zs"])
+        ax.legend([p[0] for p in labproxies],[p[1] for p in labproxies] )
+    else:
+        plt.legend([p[0] for p in labproxies],[p[1] for p in labproxies] )
     return plt
 
 def lineplot(table,row,glob):
