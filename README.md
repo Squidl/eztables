@@ -1,4 +1,4 @@
-# eztables
+# EZtables
 Easy python table manipulation. The idea of this project is to make a simple python module that can easily load files in different table formats (.csv, arff, xlt), do generic table transformations/processing, and save to multiple different formats (.csv, .arff, xlt, etc... but also latex, html or string patterned formats). Ideally the module would remain simple enough to be used by CLI with almost all features.
 
 ## Modules
@@ -19,7 +19,7 @@ A cli interface for the plottables module.
 ### iotable
 A module that defines an interface to load and save tables. Can be extended for most table applications.
 
-## Table formats
+## Table Formats
 Currently this module only covers a limited subset of formats.
 
 Input and Output:
@@ -30,7 +30,7 @@ Output Only:
 - pprint
 - LaTeX
 
-Coming soon:
+Coming Soon:
 - Google Sheets
 - xlt
 - html
