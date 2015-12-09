@@ -21,12 +21,15 @@ A module that defines an interface to load and save tables. Can be extended for 
 
 ## Table formats
 Currently this module only covers a limited subset of formats.
+
 Input and Output:
 - csv
 - arff
+
 Output Only:
 - pprint
 - LaTeX
+
 Coming soon:
 - Google Sheets
 - xlt
